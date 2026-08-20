@@ -5,12 +5,40 @@ public partial class Utf8String
     ulong _capacity;
 }
 
+#if !NETCOREAPP3_0_OR_GREATER && !NET5_0_OR_GREATER
+public static class EncodingExtensions
+{
+    public static int GetBytes(this Encoding encoding, ReadOnlySpan<char> chars, Span<byte> bytes)
+    {
+        if (encoding == null)
+            throw new ArgumentNullException(nameof(encoding));
+
+        // For empty spans, return immediately
+        if (chars.IsEmpty) return 0;
+
+        // Fixed statement allows us to work with pointers to the span data
+        unsafe
+        {
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+            {
+                return encoding.GetBytes(charsPtr, chars.Length, bytesPtr, bytes.Length);
+            }
+        }
+    }
+}
+#endif
+
 /// A Rust-allocated UTF-8 string.
 ///
 /// This type wraps a native Rust <c>String</c> and provides zero-copy read access
 /// via the <see cref="String"/> property.
 {{ _types_docs_owned }}
+#if NET7_0_OR_GREATER
 [NativeMarshalling(typeof(MarshallerMeta))]
+#else
+[StructLayout(LayoutKind.Sequential)]
+#endif
 public partial class Utf8String : IDisposable
 {
     private Utf8String() { }
@@ -21,7 +49,7 @@ public partial class Utf8String : IDisposable
     {
         var rval = new Utf8String();
         var source = s.AsSpan();
-        Span<byte> utf8Bytes = stackalloc byte[Encoding.UTF8.GetByteCount(source)];
+        Span<byte> utf8Bytes = stackalloc byte[Encoding.UTF8.GetByteCount(s)];
         var len = Encoding.UTF8.GetBytes(source, utf8Bytes);
 
         fixed (byte* p = utf8Bytes)
@@ -51,7 +79,7 @@ public partial class Utf8String : IDisposable
         get
         {
             var span = new ReadOnlySpan<byte>((byte*)_ptr, (int)_len);
-            var s = Encoding.UTF8.GetString(span);
+            var s = Encoding.UTF8.GetString(span.ToArray());
             return s;
         }
     }
@@ -135,24 +163,44 @@ public partial class Utf8String : IDisposable
 
     internal partial class InteropHelper
     {
+        {{ _fns_decorators_all | indent(width = 8) }}
+#if NET7_0_OR_GREATER
         [LibraryImport(Interop.NativeLib, EntryPoint = "{{ create_entry_point }}")]
+        partial
+#else
+        [DllImport(Interop.NativeLib, EntryPoint = "{{ create_entry_point }}", CallingConvention = CallingConvention.Cdecl)]
+        extern
+#endif
+
+        public static long interoptopus_string_create(IntPtr utf8, ulong len, out Unmanaged rval);
+
         {{ _fns_decorators_all | indent(width = 8) }}
-
-        public static partial long interoptopus_string_create(IntPtr utf8, ulong len, out Unmanaged rval);
-
+#if NET7_0_OR_GREATER
         [LibraryImport(Interop.NativeLib, EntryPoint = "{{ destroy_entry_point }}")]
+        partial
+#else
+        [DllImport(Interop.NativeLib, EntryPoint = "{{ destroy_entry_point }}", CallingConvention = CallingConvention.Cdecl)]
+        extern
+#endif
+
+        public static long interoptopus_string_destroy(Unmanaged utf8);
+
         {{ _fns_decorators_all | indent(width = 8) }}
-
-        public static partial long interoptopus_string_destroy(Unmanaged utf8);
-
+#if NET7_0_OR_GREATER
         [LibraryImport(Interop.NativeLib, EntryPoint = "{{ clone_entry_point }}")]
-        {{ _fns_decorators_all | indent(width = 8) }}
+        partial
+#else
+        [DllImport(Interop.NativeLib, EntryPoint = "{{ clone_entry_point }}", CallingConvention = CallingConvention.Cdecl)]
+        extern
+#endif
 
-        public static partial long interoptopus_string_clone(ref Unmanaged orig, ref Unmanaged cloned);
+        public static long interoptopus_string_clone(ref Unmanaged orig, ref Unmanaged cloned);
     }
 
+#if NET7_0_OR_GREATER
     [CustomMarshaller(typeof(Utf8String), MarshalMode.Default, typeof(Marshaller))]
     private struct MarshallerMeta { }
+#endif
 
     internal ref struct Marshaller
     {

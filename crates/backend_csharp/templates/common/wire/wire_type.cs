@@ -27,7 +27,11 @@ public static class {{ wire_name }}Extensions
 /// Rust can read. Create one with <see cref="From"/> before passing to a Rust
 /// function; use <see cref="Unwire"/> to deserialize a buffer received from Rust.
 {{ _types_docs_owned }}
+#if NET7_0_OR_GREATER
 [NativeMarshalling(typeof(MarshallerMeta))]
+#else
+[StructLayout(LayoutKind.Sequential)]
+#endif
 public partial class {{ wire_name }} : IDisposable
 {
     internal WireBuffer Buffer;
@@ -89,8 +93,10 @@ public partial class {{ wire_name }} : IDisposable
         return rval;
     }
 
+#if NET7_0_OR_GREATER
     [CustomMarshaller(typeof({{ wire_name }}), MarshalMode.Default, typeof(Marshaller))]
     private struct MarshallerMeta { }
+#endif
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct Unmanaged

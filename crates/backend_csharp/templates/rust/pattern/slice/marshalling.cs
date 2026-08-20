@@ -11,7 +11,11 @@ public partial class {{ name }}
 /// The slice allocates a temporary native copy via <c>Marshal.AllocHGlobal</c>;
 /// call <see cref="Dispose"/> to free it.
 {{ _types_docs_owned }}
+#if NET7_0_OR_GREATER
 [NativeMarshalling(typeof(MarshallerMeta))]
+#else
+[StructLayout(LayoutKind.Sequential)]
+#endif
 public partial class {{ name }} : IDisposable
 {
     /// The number of elements in this slice.
@@ -77,8 +81,10 @@ public partial class {{ name }} : IDisposable
     {{ _fns_decorators_internal | indent }}
     internal Unmanaged AsUnmanaged() => ToUnmanaged();
 
+#if NET7_0_OR_GREATER
     [CustomMarshaller(typeof({{ name }}), MarshalMode.Default, typeof(Marshaller))]
     private struct MarshallerMeta { }
+#endif
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct Unmanaged

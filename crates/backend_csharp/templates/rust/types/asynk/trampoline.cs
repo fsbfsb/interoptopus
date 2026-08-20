@@ -1,7 +1,38 @@
+#if !NETCOREAPP2_0_OR_GREATER && !NET5_0_OR_GREATER
+public static class DictionaryExtensions
+{
+    public static bool Remove<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, out TValue value)
+    {
+        if (dictionary == null)
+            throw new ArgumentNullException(nameof(dictionary));
+
+        if (dictionary.TryGetValue(key, out value))
+        {
+            dictionary.Remove(key);
+            return true;
+        }
+
+        value = default(TValue);
+        return false;
+    }
+    public static bool TryAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
+    {
+        if (dictionary == null)
+            throw new ArgumentNullException(nameof(dictionary));
+
+        if (dictionary.ContainsKey(key))
+            return false;
+
+        dictionary.Add(key, value);
+        return true;
+    }
+}
+#endif
+
 internal class {{ trampoline_name }}
 {
-    private static ulong Id = 0;
-    private static Dictionary<ulong, TaskCompletionSource<{% if is_task_void %}bool{% else %}{{ task_inner_ty }}{% endif %}>> InFlight = new(1024);
+    private static long Id = 0;
+    private static Dictionary<long, TaskCompletionSource<{% if is_task_void %}bool{% else %}{{ task_inner_ty }}{% endif %}>> InFlight = new(1024);
     private AsyncCallbackCommon _delegate;
     private IntPtr _callback_ptr;
 
@@ -18,7 +49,7 @@ internal class {{ trampoline_name }}
     {
         TaskCompletionSource<{% if is_task_void %}bool{% else %}{{ task_inner_ty }}{% endif %}> tcs;
 
-        lock (InFlight) { InFlight.Remove((ulong) csPtr, out tcs); }
+        lock (InFlight) { InFlight.Remove((long) csPtr, out tcs); }
 
         // Wire layout matches Rust's `#[repr(C, u8)]` AsyncOutcome<T>:
         // byte 0 is the discriminant, payload (if any) follows at T's natural alignment.

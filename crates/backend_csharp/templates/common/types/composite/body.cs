@@ -1,4 +1,8 @@
+#if NET7_0_OR_GREATER
 [NativeMarshalling(typeof(MarshallerMeta))]
+#else
+[StructLayout(LayoutKind.Sequential)]
+#endif
 {{ visibility }} partial {{ struct_or_class }} {{ name }}{% if is_disposable %} : IDisposable{% endif %}
 {
     {{ unmanaged | indent }}
@@ -20,8 +24,10 @@
         return "{{name}} { ... }";
     }
 
+#if NET7_0_OR_GREATER
     [CustomMarshaller(typeof({{ name }}), MarshalMode.Default, typeof(Marshaller))]
     private struct MarshallerMeta { }
+#endif
     internal ref struct Marshaller
     {
         private {{ name }} _managed;

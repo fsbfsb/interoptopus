@@ -1,5 +1,9 @@
 {%- if not is_managed_only -%}
+#if NET7_0_OR_GREATER
 [NativeMarshalling(typeof(MarshallerMeta))]
+#else
+[StructLayout(LayoutKind.Sequential)]
+#endif
 {% endif -%}
 {{ visibility }} partial {{ struct_or_class }} {{ name }}{% if is_result or is_disposable %} : {% if is_result %}IResult<{{ result_ok_name }}, {{ result_err_name }}>{% if is_disposable %}, {% endif %}{% endif %}{% if is_disposable %}IDisposable{% endif %}{% endif %}
 {
@@ -46,8 +50,10 @@
     }
 {% endif -%}
 {%- if not is_managed_only %}
+#if NET7_0_OR_GREATER
     [CustomMarshaller(typeof({{ name }}), MarshalMode.Default, typeof(Marshaller))]
     private struct MarshallerMeta { }
+#endif
 
     internal ref struct Marshaller
     {

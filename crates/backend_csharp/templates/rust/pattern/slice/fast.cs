@@ -15,7 +15,11 @@ public partial class {{ name }}
 /// If received from Rust, the slice points into Rust memory and is only valid
 /// for the duration of the call.
 {{ _types_docs_owned }}
+#if NET7_0_OR_GREATER
 [NativeMarshalling(typeof(MarshallerMeta))]
+#else
+[StructLayout(LayoutKind.Sequential)]
+#endif
 public partial class {{ name }} : IEnumerable<{{ element_type }}>, IDisposable
 {
     /// The number of elements in this slice.
@@ -102,8 +106,10 @@ public partial class {{ name }} : IEnumerable<{{ element_type }}>, IDisposable
     {{ _fns_decorators_internal | indent }}
     internal Unmanaged AsUnmanaged() => ToUnmanaged();
 
+#if NET7_0_OR_GREATER
     [CustomMarshaller(typeof({{ name }}), MarshalMode.Default, typeof(Marshaller))]
     private struct MarshallerMeta { }
+#endif
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct Unmanaged

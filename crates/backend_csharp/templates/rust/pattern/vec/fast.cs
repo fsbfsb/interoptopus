@@ -6,7 +6,11 @@
 ///
 /// The memory is owned by Rust. Elements can be read via the indexer.
 {{ _types_docs_owned }}
+#if NET7_0_OR_GREATER
 [NativeMarshalling(typeof(MarshallerMeta))]
+#else
+[StructLayout(LayoutKind.Sequential)]
+#endif
 public partial class {{ name }} : IDisposable
 {
 

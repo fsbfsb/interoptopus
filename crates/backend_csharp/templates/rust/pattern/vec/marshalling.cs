@@ -6,7 +6,11 @@
 ///
 /// Elements are marshalled from their unmanaged representation on each access.
 {{ _types_docs_owned }}
+#if NET7_0_OR_GREATER
 [NativeMarshalling(typeof(MarshallerMeta))]
+#else
+[StructLayout(LayoutKind.Sequential)]
+#endif
 public partial class {{ name }} : IDisposable
 {
 

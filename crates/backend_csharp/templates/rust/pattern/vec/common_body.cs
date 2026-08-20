@@ -66,14 +66,28 @@ public partial class {{ name }}
 
     internal partial class InteropHelper
     {
+#if NET7_0_OR_GREATER
         [LibraryImport(Interop.NativeLib, EntryPoint = "{{ create_entry_point }}")]
-        internal static partial long interoptopus_vec_create(IntPtr vec, ulong len, out Unmanaged rval);
+        partial
+#else
+        [DllImport(Interop.NativeLib, EntryPoint = "{{ create_entry_point }}", CallingConvention = CallingConvention.Cdecl)]
+        extern
+#endif
+        internal static long interoptopus_vec_create(IntPtr vec, ulong len, out Unmanaged rval);
+#if NET7_0_OR_GREATER
         [LibraryImport(Interop.NativeLib, EntryPoint = "{{ destroy_entry_point }}")]
-        internal static partial long interoptopus_vec_destroy(Unmanaged vec);
+        partial
+#else
+        [DllImport(Interop.NativeLib, EntryPoint = "{{ destroy_entry_point }}", CallingConvention = CallingConvention.Cdecl)]
+        extern
+#endif
+        internal static long interoptopus_vec_destroy(Unmanaged vec);
     }
 
+#if NET7_0_OR_GREATER
     [CustomMarshaller(typeof({{ name }}), MarshalMode.Default, typeof(Marshaller))]
     private struct MarshallerMeta { }
+#endif
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct Unmanaged

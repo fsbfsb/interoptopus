@@ -20,7 +20,12 @@ internal unsafe struct Unmanaged
 {%- if is_struct %}
         var _managed = default({{ name }});
 {%- else %}
-        var _managed = ({{ name }})System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof({{ name }}));
+        var _managed = ({{ name }})
+#if NET5_0_OR_GREATER
+            System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof({{ name }}));
+#else
+            System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof({{ name }}));
+#endif
 {%- endif %}
         {%- for field in fields %}
         {%- if field.custom_to_managed %}

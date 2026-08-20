@@ -6,7 +6,11 @@ internal partial struct WireBuffer
     public int capacity;
 }
 
+#if NET7_0_OR_GREATER
 [NativeMarshalling(typeof(MarshallerMeta))]
+#else
+[StructLayout(LayoutKind.Sequential)]
+#endif
 internal partial struct WireBuffer
 {
     {{ _fns_decorators_all | indent }}
@@ -110,8 +114,10 @@ internal partial struct WireBuffer
         return "WireBuffer { ... }";
     }
 
+#if NET7_0_OR_GREATER
     [CustomMarshaller(typeof(WireBuffer), MarshalMode.Default, typeof(Marshaller))]
     private struct MarshallerMeta { }
+#endif
     internal ref struct Marshaller
     {
         private WireBuffer _managed;
@@ -142,12 +148,24 @@ internal partial struct WireBuffer
 
 {% if not plugin_mode %}
 internal partial class WireInterop {
+    {{ _fns_decorators_all | indent }}
+#if NET7_0_OR_GREATER
     [LibraryImport(Interop.NativeLib, EntryPoint = "{{ create_entry_point }}")]
-    {{ _fns_decorators_all | indent }}
-    public static unsafe partial IntPtr interoptopus_wire_create(int size, out int out_len, out int out_capacity);
+    partial 
+#else
+    [DllImport(Interop.NativeLib, EntryPoint = "{{ create_entry_point }}", CallingConvention = CallingConvention.Cdecl)]
+    extern
+#endif
+    public static unsafe IntPtr interoptopus_wire_create(int size, out int out_len, out int out_capacity);
 
-    [LibraryImport(Interop.NativeLib, EntryPoint = "{{ destroy_entry_point }}")]
     {{ _fns_decorators_all | indent }}
-    public static partial void interoptopus_wire_destroy(IntPtr data, int len, int capacity);
+#if NET7_0_OR_GREATER
+    [LibraryImport(Interop.NativeLib, EntryPoint = "{{ destroy_entry_point }}")]
+    partial
+#else
+    [DllImport(Interop.NativeLib, EntryPoint = "{{ destroy_entry_point }}", CallingConvention = CallingConvention.Cdecl)]
+    extern
+#endif
+    public static void interoptopus_wire_destroy(IntPtr data, int len, int capacity);
 }
 {% endif %}

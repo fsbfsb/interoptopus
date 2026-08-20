@@ -24,7 +24,11 @@ delegate void {{ name }}Destructor(IntPtr data);
 /// Rust to free any associated data. When passed to Rust, hold onto this class until done,
 /// otherwise your function trampoline might get deallocated.
 {{ _types_docs_owned }}
+#if NET7_0_OR_GREATER
 [NativeMarshalling(typeof(MarshallerMeta))]
+#else
+[StructLayout(LayoutKind.Sequential)]
+#endif
 {{ visibility }} partial class {{ name }} : IDisposable
 {
     // Static helpers to de-allocate a pinned GCHandle when callback dropped / disposed.
@@ -141,8 +145,10 @@ delegate void {{ name }}Destructor(IntPtr data);
         return rval;
     }
 
+#if NET7_0_OR_GREATER
     [CustomMarshaller(typeof({{ name }}), MarshalMode.Default, typeof(Marshaller))]
     private struct MarshallerMeta {  }
+#endif
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct Unmanaged
